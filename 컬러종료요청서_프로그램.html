@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>컬러 종료 요청서 프로그램</title>
+<style>
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface2: #f0f2f5;
+  --border: #e2e5eb;
+  --accent: #1a6ef5;
+  --accent2: #0ea5e9;
+  --danger: #dc2626;
+  --success: #16803c;
+  --text: #141820;
+  --text2: #5a6172;
+  --text3: #9aa0ad;
+  --radius: 8px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+/* UPLOAD SCREEN */
+#upload-screen {
+  min-height:100vh; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:24px; padding:40px;
+}
+.upload-logo { font-family:'DM Mono','Courier New',monospace; font-size:11px; letter-spacing:0.2em; color:var(--text3); text-transform:uppercase; }
+.upload-title { font-size:26px; font-weight:700; text-align:center; line-height:1.3; }
+.upload-title span { color:var(--accent); }
+.upload-zones { display:flex; gap:14px; width:100%; max-width:760px; flex-wrap:wrap; }
+.upload-zone {
+  flex:1; min-width:240px;
+  background:var(--surface); border:1.5px dashed var(--border);
+  border-radius:12px; padding:28px 20px; text-align:center;
+  cursor:pointer; transition:all 0.2s; position:relative;
+}
+.upload-zone:hover, .upload-zone.drag-over { border-color:var(--accent); background:#f0f5ff; }
+.upload-zone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+.upload-zone .icon { font-size:28px; margin-bottom:10px; }
+.upload-zone h3 { font-size:14px; font-weight:600; margin-bottom:4px; }
+.upload-zone p { font-size:12px; color:var(--text3); }
+.upload-zone .status { margin-top:10px; font-size:11px; font-family:'DM Mono',monospace; display:none; }
+.status-template { color:var(--accent); }
+.status-sales { color:var(--accent2); }
+.upload-zone.done { border-color:var(--success); border-style:solid; background:#f0faf4; }
+
+.start-btn {
+  display:none; padding:12px 40px;
+  background:var(--accent); color:#fff;
+  border:none; border-radius:8px;
+  font-size:15px; font-weight:700; cursor:pointer;
+  font-family:inherit;
+  transition:background 0.15s;
+}
+.start-btn:hover { background:#1558c0; }
+.upload-hint { font-size:12px; color:var(--text3); font-family:'DM Mono',monospace; letter-spacing:0.05em; text-align:center; }
+
+/* DASHBOARD */
+#dashboard { display:none; }
+.topbar {
+  position:sticky; top:0; z-index:100;
+  background:rgba(255,255,255,0.95); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  box-shadow:0 1px 4px rgba(0,0,0,0.06);
+  padding:0 28px; display:flex; align-items:center; gap:16px; height:52px;
+}
+.topbar-brand { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.15em; color:var(--accent); text-transform:uppercase; }
+.topbar-sep { width:1px; height:18px; background:var(--border); }
+.topbar-title { font-size:13px; font-weight:600; }
+.topbar-right { margin-left:auto; display:flex; align-items:center; gap:10px; }
+.btn-reset {
+  font-size:12px; color:var(--text2); background:var(--surface2);
+  border:1px solid var(--border); border-radius:6px; padding:5px 12px;
+  cursor:pointer; font-family:inherit; transition:all 0.15s;
+}
+.btn-reset:hover { color:var(--text); border-color:var(--text3); }
+
+.main { padding:24px 28px; max-width:1400px; margin:0 auto; }
+
+/* INPUT FORM SECTION */
+.section-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); padding:20px 24px; margin-bottom:16px;
+}
+.section-title {
+  font-size:13px; font-weight:700; color:var(--text);
+  margin-bottom:16px; display:flex; align-items:center; gap:8px;
+}
+.section-title::before {
+  content:''; width:3px; height:14px; background:var(--accent);
+  border-radius:2px;
+}
+
+.input-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.input-grid.full { grid-template-columns:1fr; }
+
+.input-group { display:flex; flex-direction:column; gap:6px; }
+.input-label { font-size:12px; color:var(--text2); font-weight:500; }
+.input-label .required { color:var(--danger); }
+.input-label .optional { color:var(--text3); font-weight:400; }
+
+.input-field {
+  padding:10px 12px; border:1px solid var(--border);
+  border-radius:6px; font-size:13px; font-family:inherit;
+  background:var(--surface); color:var(--text);
+  transition:border-color 0.15s;
+}
+.input-field:focus { outline:none; border-color:var(--accent); }
+.input-field::placeholder { color:var(--text3); }
+
+textarea.input-field { resize:vertical; min-height:80px; line-height:1.5; }
+
+/* PREVIEW SECTION */
+.preview-row { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:16px; }
+.preview-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); padding:18px 20px;
+}
+.preview-label { font-size:11px; font-family:'DM Mono',monospace; letter-spacing:0.1em; color:var(--text3); text-transform:uppercase; margin-bottom:8px; }
+.preview-value { font-size:24px; font-weight:700; color:var(--accent); line-height:1; }
+.preview-value.dark { color:var(--text); }
+.preview-value.small { font-size:14px; font-weight:600; }
+.preview-sub { font-size:11px; color:var(--text3); margin-top:5px; }
+
+/* TABLE */
+.table-wrap {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); overflow:hidden; margin-bottom:16px;
+}
+.table-header {
+  padding:14px 20px; border-bottom:1px solid var(--border);
+  font-size:13px; font-weight:600; display:flex; align-items:center; justify-content:space-between;
+}
+table { width:100%; border-collapse:collapse; font-size:12px; }
+thead th {
+  background:var(--surface2); padding:10px 12px; text-align:center;
+  font-weight:600; color:var(--text2); border-bottom:1px solid var(--border);
+  font-size:11px; letter-spacing:0.05em;
+}
+tbody td { padding:9px 12px; border-bottom:1px solid var(--border); }
+tbody tr:last-child td { border-bottom:none; }
+tbody tr:hover { background:#fafbfd; }
+.td-option { text-align:left; color:var(--text); }
+.td-num { text-align:center; color:var(--text2); font-family:'DM Mono',monospace; }
+.tr-total { background:#f5f7fa; font-weight:700; }
+.tr-total td { color:var(--text); }
+
+/* ACTIONS */
+.actions { display:flex; gap:10px; margin-bottom:32px; flex-wrap:wrap; }
+.btn-primary, .btn-secondary {
+  padding:11px 24px; border-radius:6px;
+  font-size:13px; font-weight:600; cursor:pointer;
+  font-family:inherit; transition:all 0.15s; border:none;
+  display:inline-flex; align-items:center; gap:6px;
+}
+.btn-primary { background:var(--accent); color:#fff; }
+.btn-primary:hover { background:#1558c0; }
+.btn-secondary { background:var(--surface); color:var(--text); border:1px solid var(--border); }
+.btn-secondary:hover { border-color:var(--text3); }
+
+.alert {
+  padding:10px 14px; border-radius:6px; font-size:12px;
+  margin-bottom:14px; display:none;
+}
+.alert.error { background:#fef2f2; color:var(--danger); border:1px solid #fecaca; }
+.alert.success { background:#f0faf4; color:var(--success); border:1px solid #bbf7d0; }
+.alert.show { display:block; }
+
+/* COLOR TAGS */
+.color-tags { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+.color-tag {
+  padding:3px 10px; background:#fef2f2; color:var(--danger);
+  border-radius:4px; font-size:11px; font-weight:500;
+}
+
+.help-text { font-size:11px; color:var(--text3); margin-top:4px; }
+
+@media (max-width: 768px) {
+  .input-grid { grid-template-columns:1fr; }
+  .preview-row { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- UPLOAD SCREEN -->
+<div id="upload-screen">
+  <div class="upload-logo">FC Team · Cowork Program</div>
+  <div class="upload-title">컬러 종료 요청서 <span>자동 생성</span><br>프로그램</div>
+
+  <div class="upload-zones">
+    <div class="upload-zone" id="zone-template">
+      <input type="file" id="input-template" accept=".xlsx,.xls">
+      <div class="icon">📋</div>
+      <h3>컬러 종료 요청서 양식</h3>
+      <p>회사 양식 (.xlsx)</p>
+      <div class="status status-template" id="status-template"></div>
+    </div>
+    <div class="upload-zone" id="zone-sales">
+      <input type="file" id="input-sales" accept=".xlsx,.xls">
+      <div class="icon">📊</div>
+      <h3>판매량 데이터</h3>
+      <p>옵션별 판매량/현재고 (.xlsx)</p>
+      <div class="status status-sales" id="status-sales"></div>
+    </div>
+  </div>
+
+  <button class="start-btn" id="start-btn" onclick="startDashboard()">설정 입력 →</button>
+  <div class="upload-hint">두 파일 모두 필수 · 양식과 판매 데이터를 업로드하세요</div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="topbar">
+    <div class="topbar-brand">FC · Cowork</div>
+    <div class="topbar-sep"></div>
+    <div class="topbar-title" id="topbar-title">컬러 종료 요청서 생성</div>
+    <div class="topbar-right">
+      <button class="btn-reset" onclick="resetAll()">↩ 다시 업로드</button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- 입력 정보 -->
+    <div class="section-card">
+      <div class="section-title">입력 정보</div>
+      
+      <div class="input-grid full">
+        <div class="input-group">
+          <label class="input-label">종료요청 컬러 <span class="required">*</span></label>
+          <input type="text" id="input-colors" class="input-field" placeholder="예: 포레스트그린, 카멜브라운, 카키" oninput="updateColorTags()">
+          <div class="color-tags" id="color-tags"></div>
+          <div class="help-text">쉼표(,)로 여러 컬러 입력. 진행 컬러는 제외하고 종료할 컬러만 입력하세요.</div>
+        </div>
+      </div>
+
+      <div class="input-grid" style="margin-top:14px;">
+        <div class="input-group">
+          <label class="input-label">판매 시작일 <span class="optional">(선택)</span></label>
+          <input type="text" id="input-start" class="input-field" placeholder="비워두면 데이터에서 자동 추출">
+          <div class="help-text">예: 2024.04.04</div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">판매 종료일 <span class="optional">(선택)</span></label>
+          <input type="text" id="input-end" class="input-field" placeholder="비워두면 데이터에서 자동 추출">
+          <div class="help-text">예: 2024.07.01</div>
+        </div>
+      </div>
+
+      <div class="input-grid" style="margin-top:14px;">
+        <div class="input-group">
+          <label class="input-label">현재고 강제 0 처리 <span class="optional">(선택)</span></label>
+          <select id="input-stock-zero" class="input-field">
+            <option value="no">아니오 (실제 재고값 사용)</option>
+            <option value="yes">예 (모든 옵션 현재고를 0으로)</option>
+          </select>
+          <div class="help-text">발주 캔슬, 재고 소진 등으로 0 처리해야 할 때 사용</div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">색상명 입력 <span class="optional">(선택)</span></label>
+          <input type="text" id="input-colorname" class="input-field" placeholder="비워두면 종료요청 컬러로 자동 입력">
+          <div class="help-text">양식의 색상명 셀에 입력될 텍스트</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 미리보기 -->
+    <div class="section-card">
+      <div class="section-title">자동 계산 결과</div>
+      <div class="preview-row">
+        <div class="preview-card">
+          <div class="preview-label">판매기간</div>
+          <div class="preview-value small dark" id="preview-period">—</div>
+        </div>
+        <div class="preview-card">
+          <div class="preview-label">판매량 합계</div>
+          <div class="preview-value" id="preview-sales">—</div>
+          <div class="preview-sub" id="preview-sales-sub">종료요청 컬러 합산</div>
+        </div>
+        <div class="preview-card">
+          <div class="preview-label">현재고 합계</div>
+          <div class="preview-value dark" id="preview-stock">—</div>
+          <div class="preview-sub" id="preview-stock-sub">종료요청 컬러 합산</div>
+        </div>
+      </div>
+
+      <button class="btn-secondary" onclick="calculate()" style="margin-top:4px;">🔄 다시 계산</button>
+    </div>
+
+    <!-- 옵션별 상세 -->
+    <div class="table-wrap" id="detail-table-wrap" style="display:none;">
+      <div class="table-header">
+        <span>📦 종료요청 컬러 옵션별 판매현황</span>
+        <span style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;" id="detail-count"></span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align:left;padding-left:20px;">옵션명</th>
+            <th>판매량</th>
+            <th>현재고</th>
+          </tr>
+        </thead>
+        <tbody id="detail-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- 알림 -->
+    <div class="alert error" id="alert-error"></div>
+    <div class="alert success" id="alert-success"></div>
+
+    <!-- 액션 -->
+    <div class="actions">
+      <button class="btn-primary" onclick="generateExcel()">⬇ 엑셀 다운로드</button>
+      <button class="btn-secondary" onclick="copyPromptForClaude()">📋 Claude 프롬프트 복사 (PDF 변환용)</button>
+    </div>
+
+    <div style="font-size:11px;color:var(--text3);line-height:1.6;padding:10px 0 30px;">
+      💡 <strong>PDF 변환 방법</strong>: 엑셀 다운로드 후, "Claude 프롬프트 복사" 버튼을 눌러 받은 텍스트와 다운로드한 엑셀 파일을 Claude에게 보내면 자동으로 PDF로 만들어드립니다.
+    </div>
+  </div>
+</div>
+
+<!-- SheetJS for Excel I/O -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+// ─────────────── 전역 상태 ───────────────
+let state = {
+  templateBuf: null, templateFilename: '',
+  salesBuf: null, salesFilename: '',
+  colorData: [],
+  totalSales: 0, totalStock: 0,
+  startDate: '', endDate: '', period: ''
+};
+
+// ─────────────── 파일 업로드 셋업 ───────────────
+function setupZone(zoneId, inputId, statusId, label, onLoad) {
+  const zone  = document.getElementById(zoneId);
+  const input = document.getElementById(inputId);
+  const status = document.getElementById(statusId);
+
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag-over');
+    if (e.dataTransfer.files.length) {
+      input.files = e.dataTransfer.files;
+      input.dispatchEvent(new Event('change'));
+    }
+  });
+
+  input.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        onLoad(ev.target.result, file.name);
+        zone.classList.add('done');
+        status.style.display = 'block';
+        status.textContent = `✓ ${file.name}`;
+        checkAllUploaded();
+      } catch(err) {
+        alert(`${label} 파일 읽기 실패: ${err.message}`);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+setupZone('zone-template', 'input-template', 'status-template', '양식', (buf, name) => {
+  state.templateBuf = buf;
+  state.templateFilename = name;
+});
+
+setupZone('zone-sales', 'input-sales', 'status-sales', '판매 데이터', (buf, name) => {
+  state.salesBuf = buf;
+  state.salesFilename = name;
+});
+
+function checkAllUploaded() {
+  if (state.templateBuf && state.salesBuf) {
+    document.getElementById('start-btn').style.display = 'inline-block';
+  }
+}
+
+function startDashboard() {
+  document.getElementById('upload-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+}
+
+function resetAll() {
+  state = { templateBuf: null, templateFilename: '', salesBuf: null, salesFilename: '',
+            colorData: [], totalSales: 0, totalStock: 0, startDate: '', endDate: '', period: '' };
+  document.getElementById('upload-screen').style.display = 'flex';
+  document.getElementById('dashboard').style.display = 'none';
+  document.querySelectorAll('.upload-zone').forEach(z => z.classList.remove('done'));
+  document.querySelectorAll('.status').forEach(s => { s.style.display = 'none'; s.textContent = ''; });
+  document.getElementById('start-btn').style.display = 'none';
+  ['input-colors','input-start','input-end','input-colorname'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('input-stock-zero').value = 'no';
+  hideAlerts();
+}
+
+// ─────────────── 컬러 태그 표시 ───────────────
+function updateColorTags() {
+  const text = document.getElementById('input-colors').value;
+  const colors = text.split(',').map(c => c.trim()).filter(c => c);
+  const container = document.getElementById('color-tags');
+  container.innerHTML = colors.map(c => `<span class="color-tag">${c}</span>`).join('');
+}
+
+// ─────────────── 판매 데이터 분석 ───────────────
+function analyzeSalesData() {
+  const wb = XLSX.read(state.salesBuf, { type: 'array', cellDates: true });
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  const json = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false });
+  
+  // 헤더 1행, 날짜 헤더 2행, 데이터 3행~
+  const header = json[0] || [];
+  const dateRow = json[1] || [];
+  
+  // 연도 추출 (H1 = "2024년" 같은 형식)
+  let year = '2024';
+  for (let i = 7; i < header.length; i++) {
+    const v = header[i];
+    if (v && /\d{4}/.test(String(v))) {
+      year = String(v).match(/\d{4}/)[0];
+      break;
+    }
+  }
+  
+  // 시작/종료 날짜
+  let firstDate = null, lastDate = null;
+  for (let i = 7; i < dateRow.length; i++) {
+    const v = dateRow[i];
+    if (v) { firstDate = String(v).split('\n')[0]; break; }
+  }
+  for (let i = dateRow.length - 1; i >= 7; i--) {
+    const v = dateRow[i];
+    if (v) { lastDate = String(v).split('\n')[0]; break; }
+  }
+  
+  if (firstDate && lastDate) {
+    const [m1, d1] = firstDate.split('-');
+    const [m2, d2] = lastDate.split('-');
+    state.startDate = `${year}.${m1}.${d1}`;
+    state.endDate = `${year}.${m2}.${d2}`;
+    
+    // 개월 수 계산
+    const dt1 = new Date(`${year}-${m1}-${d1}`);
+    const dt2 = new Date(`${year}-${m2}-${d2}`);
+    const days = Math.round((dt2 - dt1) / (1000 * 60 * 60 * 24));
+    const months = Math.round(days / 30);
+    state.period = `${state.startDate} ~ ${state.endDate} (약 ${months}개월)`;
+  }
+  
+  // 옵션 데이터 추출 (행 3부터)
+  const rows = [];
+  for (let i = 2; i < json.length; i++) {
+    const row = json[i];
+    if (!row || !row[4]) continue;
+    rows.push({
+      option: String(row[4]),
+      sales: Number(row[5]) || 0,
+      stock: Number(row[6]) || 0
+    });
+  }
+  return rows;
+}
+
+// ─────────────── 옵션명에서 컬러/사이즈 추출 ───────────────
+function parseOption(option, targetColors) {
+  for (const color of targetColors) {
+    if (option.includes(color)) {
+      // 사이즈 추출: "[L]" 또는 "사이즈:L" 패턴
+      let size = '?';
+      const m1 = option.match(/\[([^\]]+)\]/);
+      const m2 = option.match(/사이즈[:\s]*(\S+)/);
+      if (m1) size = m1[1];
+      else if (m2) size = m2[1].replace(/[,\s]+$/, '');
+      return { color, size };
+    }
+  }
+  return null;
+}
+
+const SIZE_ORDER = { 'XS':-1, 'S':0, 'M':1, 'L':2, 'XL':3, '2XL':4, '3XL':5, '4XL':6, 'FREE':7,
+                     '28':10, '30':11, '32':12, '34':13, '36':14 };
+
+// ─────────────── 계산 실행 ───────────────
+function calculate() {
+  hideAlerts();
+  
+  const colorsText = document.getElementById('input-colors').value.trim();
+  if (!colorsText) {
+    showError('종료요청 컬러를 입력해주세요.');
+    return;
+  }
+  const targetColors = colorsText.split(',').map(c => c.trim()).filter(c => c);
+  
+  let salesRows;
+  try {
+    salesRows = analyzeSalesData();
+  } catch (err) {
+    showError('판매 데이터 분석 실패: ' + err.message);
+    return;
+  }
+  
+  // 종료요청 컬러 매칭
+  const colorOrder = {};
+  targetColors.forEach((c, i) => colorOrder[c] = i);
+  
+  const stockZero = document.getElementById('input-stock-zero').value === 'yes';
+  
+  const matched = [];
+  for (const r of salesRows) {
+    const parsed = parseOption(r.option, targetColors);
+    if (parsed) {
+      matched.push({
+        color: parsed.color,
+        size: parsed.size,
+        sales: r.sales,
+        stock: stockZero ? 0 : r.stock,
+        original: r.option
+      });
+    }
+  }
+  
+  // 정렬
+  matched.sort((a, b) => {
+    if (colorOrder[a.color] !== colorOrder[b.color]) return colorOrder[a.color] - colorOrder[b.color];
+    return (SIZE_ORDER[a.size] || 99) - (SIZE_ORDER[b.size] || 99);
+  });
+  
+  state.colorData = matched;
+  state.totalSales = matched.reduce((s, m) => s + m.sales, 0);
+  state.totalStock = matched.reduce((s, m) => s + m.stock, 0);
+  
+  // 판매기간 사용자 입력 우선
+  const userStart = document.getElementById('input-start').value.trim();
+  const userEnd = document.getElementById('input-end').value.trim();
+  if (userStart) state.startDate = userStart;
+  if (userEnd) state.endDate = userEnd;
+  if (userStart || userEnd) {
+    if (state.startDate && state.endDate) {
+      try {
+        const dt1 = new Date(state.startDate.replace(/\./g, '-'));
+        const dt2 = new Date(state.endDate.replace(/\./g, '-'));
+        const days = Math.round((dt2 - dt1) / (1000 * 60 * 60 * 24));
+        const months = Math.round(days / 30);
+        state.period = `${state.startDate} ~ ${state.endDate} (약 ${months}개월)`;
+      } catch(e) {
+        state.period = `${state.startDate} ~ ${state.endDate}`;
+      }
+    }
+  }
+  
+  // 미리보기 업데이트
+  document.getElementById('preview-period').textContent = state.period || '—';
+  document.getElementById('preview-sales').textContent = state.totalSales.toLocaleString();
+  document.getElementById('preview-stock').textContent = state.totalStock.toLocaleString();
+  document.getElementById('preview-sales-sub').textContent = `${matched.length}개 옵션 합산`;
+  document.getElementById('preview-stock-sub').textContent = stockZero ? '⚠ 강제 0 처리됨' : `${matched.length}개 옵션 합산`;
+  
+  // 상세 테이블
+  if (matched.length > 0) {
+    document.getElementById('detail-table-wrap').style.display = 'block';
+    document.getElementById('detail-count').textContent = `${matched.length} options`;
+    const tbody = document.getElementById('detail-tbody');
+    tbody.innerHTML = matched.map(m => `
+      <tr>
+        <td class="td-option" style="padding-left:20px;">색상:${m.color}, 사이즈:${m.size}</td>
+        <td class="td-num">${m.sales.toLocaleString()}</td>
+        <td class="td-num">${m.stock.toLocaleString()}</td>
+      </tr>
+    `).join('') + `
+      <tr class="tr-total">
+        <td style="text-align:center;">합계</td>
+        <td class="td-num">${state.totalSales.toLocaleString()}</td>
+        <td class="td-num">${state.totalStock.toLocaleString()}</td>
+      </tr>
+    `;
+  } else {
+    showError('해당 컬러로 매칭되는 옵션이 없습니다. 컬러명을 확인해주세요.');
+  }
+}
+
+// ─────────────── 엑셀 생성 (간단 버전 - 데이터 채우기) ───────────────
+function generateExcel() {
+  hideAlerts();
+  
+  if (state.colorData.length === 0) {
+    showError('먼저 [다시 계산] 버튼을 눌러 데이터를 분석해주세요.');
+    return;
+  }
+  
+  try {
+    // 양식 워크북 로드
+    const wb = XLSX.read(state.templateBuf, { type: 'array', cellStyles: true });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    
+    // 양식 위치 자동 탐지
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    let salesRow = -1, reasonRow = -1, colorRow = -1, colorCol = -1;
+    
+    for (let R = range.s.r; R <= range.e.r; R++) {
+      for (let C = range.s.c; C <= range.e.c; C++) {
+        const cellRef = XLSX.utils.encode_cell({r: R, c: C});
+        const cell = ws[cellRef];
+        if (!cell || !cell.v) continue;
+        const val = String(cell.v);
+        if (val === '판매량' && salesRow === -1) salesRow = R;
+        if (val.includes('종료사유') && reasonRow === -1) reasonRow = R;
+        if (val === '색상명' && colorRow === -1) { colorRow = R; colorCol = C; }
+      }
+    }
+    
+    // 판매기간/판매량/현재 재고 입력 (자동 탐지된 행 기준)
+    if (salesRow !== -1) {
+      // 헤더 행 (salesRow): A=판매기간, D=판매량, F=현재 재고
+      const headerRow = salesRow + 1; // 0-indexed → SheetJS는 0-indexed
+      const dataR = salesRow + 1; // 데이터는 헤더 다음 행
+      
+      // 헤더는 그대로 두고 데이터 행만 업데이트
+      // A(판매기간), C(판매량), E(현재재고)는 양식별로 다를 수 있으니 양식 그대로 두고
+      // 우리가 알아낸 위치에 맞춰 입력 시도
+      
+      // 표준 위치: A=판매량 헤더 → 그 옆 또는 같은 위치
+      // 안전하게: 판매기간 헤더 셀의 위치 찾기
+      let periodCol = -1, salesValCol = -1, stockValCol = -1;
+      for (let C = range.s.c; C <= range.e.c; C++) {
+        const ref = XLSX.utils.encode_cell({r: salesRow, c: C});
+        const cv = ws[ref] ? String(ws[ref].v || '') : '';
+        if (cv === '판매기간') periodCol = C;
+        if (cv === '판매량') salesValCol = C;
+        if (cv.includes('현재') && cv.includes('재고')) stockValCol = C;
+      }
+      
+      // 데이터 행에 값 입력
+      if (periodCol !== -1) {
+        const ref = XLSX.utils.encode_cell({r: salesRow + 1, c: periodCol});
+        ws[ref] = { t: 's', v: state.period };
+      }
+      if (salesValCol !== -1) {
+        const ref = XLSX.utils.encode_cell({r: salesRow + 1, c: salesValCol});
+        ws[ref] = { t: 'n', v: state.totalSales };
+      }
+      if (stockValCol !== -1) {
+        const ref = XLSX.utils.encode_cell({r: salesRow + 1, c: stockValCol});
+        ws[ref] = { t: 'n', v: state.totalStock };
+      }
+    }
+    
+    // 색상명 입력 (양식의 색상명 셀 옆 칸)
+    if (colorRow !== -1) {
+      const colorName = document.getElementById('input-colorname').value.trim() 
+                     || state.colorData.map(d => d.color).filter((v,i,a)=>a.indexOf(v)===i).join(', ');
+      const ref = XLSX.utils.encode_cell({r: colorRow + 1, c: colorCol});
+      ws[ref] = { t: 's', v: colorName };
+    }
+    
+    // 새 시트에 옵션별 표 추가
+    const tableData = [
+      ['옵션명', '판매량', '현재고']
+    ];
+    state.colorData.forEach(d => {
+      tableData.push([`색상:${d.color}, 사이즈:${d.size}`, d.sales, d.stock]);
+    });
+    tableData.push(['합계', state.totalSales, state.totalStock]);
+    
+    const tableSheet = XLSX.utils.aoa_to_sheet(tableData);
+    // 스타일은 SheetJS Community 버전 한계로 못 넣지만 데이터는 들어감
+    XLSX.utils.book_append_sheet(wb, tableSheet, '종료요청 옵션별');
+    
+    // 다운로드
+    const colors = state.colorData.map(d => d.color).filter((v,i,a)=>a.indexOf(v)===i).join('_');
+    const filename = `컬러종료요청서_${colors}_${formatToday()}.xlsx`;
+    XLSX.writeFile(wb, filename);
+    
+    showSuccess('✓ 엑셀 다운로드 완료! Claude에게 PDF 변환을 요청하려면 [Claude 프롬프트 복사] 버튼을 사용하세요.');
+  } catch (err) {
+    showError('엑셀 생성 실패: ' + err.message);
+    console.error(err);
+  }
+}
+
+// ─────────────── Claude용 프롬프트 복사 ───────────────
+function copyPromptForClaude() {
+  if (state.colorData.length === 0) {
+    showError('먼저 [다시 계산] 버튼을 눌러 데이터를 분석해주세요.');
+    return;
+  }
+  
+  const colors = state.colorData.map(d => d.color).filter((v,i,a)=>a.indexOf(v)===i).join(', ');
+  const stockZero = document.getElementById('input-stock-zero').value === 'yes';
+  const colorName = document.getElementById('input-colorname').value.trim();
+  
+  const prompt = `첨부한 두 파일로 컬러 종료 요청서 PDF를 만들어줘.
+
+[파일 안내]
+1. 첫 번째 파일: 컬러 종료 요청서 양식 (xlsx)
+2. 두 번째 파일: 옵션별 판매량 데이터 (xlsx)
+
+[입력 정보]
+- 종료요청 컬러: ${colors}
+- 판매기간: ${state.period}
+- 기준 월/기간: ${state.startDate} ~ ${state.endDate}
+${colorName ? `- 색상명 셀: "${colorName}"으로 입력` : ''}
+${stockZero ? '- 현재고는 모든 옵션 0으로 처리' : ''}
+
+[작업 지시사항]
+1. 양식 상단 표 수정: 판매기간(A:C 3칸) / 판매량(D:E 2칸) / 현재 재고(F:G 2칸), 가운데 정렬
+   - 판매량: ${state.totalSales}
+   - 현재 재고: ${state.totalStock}
+2. 종료사유 본문 전체를 박스로 감싸기 (위/아래 여백, 좌측 들여쓰기)
+3. 종료요청 컬러 옵션별 판매현황 표 추가 (맨 아래)
+4. 이미지 영역 정리 (안내 텍스트/테두리/배경 제거)
+5. 이미지가 #VALUE! 에러로 표시되면 xl/media/image*.png 추출해서 직접 삽입
+6. 날짜 형식 한국식(YYYY-MM-DD)으로 변환
+7. A4 한 페이지로 PDF 변환
+
+[검증]
+- 표 합계 = 상단 표 합계 일치 확인 (판매량 ${state.totalSales} / 현재고 ${state.totalStock})
+
+[출력]
+- 수정된 엑셀 파일(.xlsx)
+- 변환된 PDF 파일(.pdf)`;
+
+  navigator.clipboard.writeText(prompt).then(() => {
+    showSuccess('✓ 프롬프트가 클립보드에 복사되었습니다! Claude에 붙여넣고 양식+판매량 파일을 함께 업로드하세요.');
+  }).catch(err => {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = prompt;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showSuccess('✓ 프롬프트가 클립보드에 복사되었습니다!');
+  });
+}
+
+// ─────────────── 헬퍼 ───────────────
+function formatToday() {
+  const d = new Date();
+  return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function showError(msg) {
+  const el = document.getElementById('alert-error');
+  el.textContent = '⚠ ' + msg;
+  el.classList.add('show');
+  document.getElementById('alert-success').classList.remove('show');
+}
+function showSuccess(msg) {
+  const el = document.getElementById('alert-success');
+  el.textContent = msg;
+  el.classList.add('show');
+  document.getElementById('alert-error').classList.remove('show');
+}
+function hideAlerts() {
+  document.getElementById('alert-error').classList.remove('show');
+  document.getElementById('alert-success').classList.remove('show');
+}
+</script>
+</body>
+</html>
